@@ -1,0 +1,160 @@
+---
+title: "icbc"
+author: "Lincy Antony"
+date: "29/12/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r }
+library(tidyverse)
+
+library(recipes)
+library(visdat)
+
+library(stats)
+library(ggplot2)
+library(dplyr)
+library(plyr)
+
+B_COL<-read.csv("C:/Users/lincy/OneDrive/Desktop/icbc/British_Columbia.csv")
+head(B_COL,10)
+View(B_COL)
+```
+
+
+```{r}
+sum(is.na(B_COL))
+
+vis_dat(B_COL,warn_large_data= FALSE)
+
+glimpse(B_COL)
+
+B_COL <- B_COL[complete.cases(B_COL), ]
+
+```
+
+```{r}
+
+Clean_data <- B_COL %>%
+ recipe(~., data= B_COL) %>%
+  step_select(-Latitude, -Longitude,-Street.Full.Name..ifnull.,-Road.Location.Description, -Cross.Street.Full.Name) %>%
+ step_mutate(
+ Crash.Severity = factor(case_when(
+ Crash.Severity == "CASUALTY CRASH" ~ 0,
+ Crash.Severity == "PROPERTY DAMAGE ONLY" ~ 1)
+), 
+  Derived.Crash.Configuration = factor(Derived.Crash.Configuration, levels=c( "", "CONFLICTED","HEAD ON", "MULTIPLE IMPACTS","OVERTAKING","REAR END", "REAR TO REAR","SIDE IMPACT" ,"SIDE SWIPE - SAME DIRECTION","SIDE SWIPE -OPPOSITE DIRECTION", "SINGLE VEHICLE", "UNDETERMINED" ),
+  labels =c(0,1,2,3,4,5,6,7,8,9,10,11)), 
+  Day.Of.Week = factor(Day.Of.Week, levels=c("SUNDAY", "MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY" ,"SATURDAY"),labels=c(1,2,3,4,5,6,7)),
+Intersection.Crash = factor(case_when(
+ Intersection.Crash == "" ~ 0,
+ Intersection.Crash == "No" ~ 0,
+ Intersection.Crash== "Yes" ~ 1)),
+Parking.Lot.Flag = factor(case_when(
+ Parking.Lot.Flag == "" ~ 0,
+ Parking.Lot.Flag == "No" ~ 0,
+ Parking.Lot.Flag== "Yes" ~ 1)),
+ Pedestrian.Flag = factor(case_when(
+ Pedestrian.Flag == "" ~ 0,
+ Pedestrian.Flag == "No" ~ 0,
+ Pedestrian.Flag == "Yes" ~ 1)),
+Month.Of.Year = factor(Month.Of.Year, levels=c("JANUARY","FEBRUARY","MARCH","APRIL" ,"MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"),labels=c(1,2,3,4,5,6,7,8,9,10,11,12)))%>%step_nzv(all_predictors())  %>% prep(B_COL) %>% bake(B_COL) 
+
+
+
+
+view(Clean_data)
+
+```
+
+
+Exploratory data:
+
+
+```{R}
+
+Clean_data %>% 
+select(c("Day.Of.Week","Total.Victims"))%>%group_by(Day.Of.Week)%>%dplyr::summarize(Total_Victims=sum(Total.Victims)) 
+
+
+```
+
+
+```{R}
+
+Clean_data %>% 
+select(c("Month.Of.Year","Total.Victims"))%>%group_by(Month.Of.Year)%>%dplyr::summarize(Total_Sales=sum(Total.Victims))
+
+
+```
+
+November and december are having more crashes.
+
+```{R}
+
+Clean_data %>% 
+select(c("Day.Of.Week","Crash.Severity"))%>%group_by(Crash.Severity)%>%tally()
+
+
+```
+
+```{R}
+
+#Clean_data %>% select(c("Day.Of.Week","Crash.Severity"))%>%group_by(Day.Of.Week)%>%summarize(cou=n(),groups = 'drop') 
+
+aggregate(B_COL$Day.Of.Week, by=list(B_COL$Crash.Severity,B_COL$Day.Of.Week), FUN=length)
+
+#Clean_data %>%select(c("Pedestrian.Flag","Parking.Lot.Flag","Intersection.Crash"))%>% group_by(Pedestrian.Flag, Parking.Lot.Flag, Intersection.Crash) %>% summarise(n=n()) #%>%ungroup() %>% group_by(n) %>% summarise(total=n())
+
+
+```
+
+
+
+Derived cash configuration vs year vs crash severity
+
+
+```{r}
+Clean_data %>% ggplot(aes(x=Derived.Crash.Configuration, fill=Crash.Severity)) + geom_bar(position="dodge")
+
+```
+
+
+```{r}
+Clean_data %>% ggplot(aes(x=Intersection.Crash, fill=Crash.Severity)) + geom_bar(position="dodge")
+
+
+```
+
+Data cleaning:
+
+
+Exploratory data:
+
+
+
+
+
+
+Crash severity ratio over the years:
+
+which day of the week is having more crashes by region:
+
+time during the crash
+
+Trend of the crashes over the years:
+
+What kind of impact is causing more severity.
+
+
+
+
+focus on vancouver - clustering 
+
+
